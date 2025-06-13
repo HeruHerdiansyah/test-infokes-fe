@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
-import type { Folder, FolderStructure, FileItem } from '../types/folder';
+import type { Folder, FolderStructure, FileItem, SearchResult } from '../types/folder';
 
 // URL API backend dari .env
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -17,6 +17,9 @@ export const useFolderStore = defineStore('folder', {
     selectedFolderId: null as number | null, // ID folder yang dipilih
     loading: false, // Status loading
     error: null as string | null, // Pesan error jika ada
+    searchResults: null as SearchResult | null, // Hasil pencarian
+    isSearching: false, // Apakah sedang dalam mode pencarian
+    searchQuery: '', // Query pencarian yang terakhir digunakan
   }),
 
   actions: {
@@ -53,6 +56,9 @@ export const useFolderStore = defineStore('folder', {
       this.loading = true;
       this.error = null;
       this.selectedFolderId = folderId;
+      this.isSearching = false; // Reset status pencarian ketika berpindah folder
+      this.searchResults = null; // Reset hasil pencarian
+      
       try {
         let folders: Folder[] = [];
         let files: FileItem[] = [];
@@ -89,6 +95,52 @@ export const useFolderStore = defineStore('folder', {
     setSelectedFolder(folderId: number | null) {
       this.selectedFolderId = folderId;
       this.fetchSubfolders(folderId);
+    },
+
+    // Pencarian folder dan file
+    async searchFolderAndFiles(query: string) {
+      if (!query || query.trim() === '') {
+        this.isSearching = false;
+        this.searchResults = null;
+        return;
+      }
+
+      this.searchQuery = query;
+      this.loading = true;
+      this.error = null;
+      this.isSearching = true;
+      
+      try {
+        const response = await axios.get(`${API_URL}/folders/search?q=${encodeURIComponent(query)}`);
+        if (response.data.success) {
+          const { folders, files } = response.data.data;
+          this.searchResults = {
+            folders: sortByName(folders || []),
+            files: sortByName(files || [])
+          };
+          this.currentFolderContent = [...this.searchResults.folders, ...this.searchResults.files];
+        } else {
+          this.error = 'Gagal melakukan pencarian';
+          this.searchResults = null;
+        }
+      } catch (error) {
+        console.error('Error saat melakukan pencarian:', error);
+        this.error = 'Terjadi kesalahan saat melakukan pencarian';
+        this.searchResults = null;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Reset pencarian
+    resetSearch() {
+      this.isSearching = false;
+      this.searchResults = null;
+      this.searchQuery = '';
+      // Kembalikan tampilan ke folder yang sedang aktif
+      if (this.selectedFolderId !== null) {
+        this.fetchSubfolders(this.selectedFolderId);
+      }
     }
   },
 }); 

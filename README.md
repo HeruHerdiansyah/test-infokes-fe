@@ -50,6 +50,7 @@ frontend/
     │   ├── FolderExplorer.vue  # Komponen untuk panel kiri (struktur folder)
     │   ├── FolderContent.vue   # Komponen untuk panel kanan (konten folder & file)
     │   ├── FolderItem.vue      # Komponen item folder individual
+    │   ├── SearchBar.vue       # Komponen untuk fitur pencarian
     │   └── HelloWorld.vue      # Komponen contoh
     ├── stores/        # Pinia stores untuk manajemen state
     │   └── folderStore.ts  # Store untuk data folder
@@ -69,3 +70,4 @@ frontend/
 - **Panel Kanan**: Menampilkan subfolder dan file dari folder yang dipilih.
 - **Folder Navigation**: Navigasi struktur folder dengan mengeklik folder.
 - **Responsive Design**: Tampilan yang responsif untuk berbagai ukuran layar.
+- **Search Function**: Pencarian folder dan file berdasarkan nama.

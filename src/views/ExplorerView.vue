@@ -2,7 +2,9 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import FolderExplorer from '../components/FolderExplorer.vue';
 import FolderContent from '../components/FolderContent.vue';
+import SearchBar from '../components/SearchBar.vue';
 import { useFolderStore } from '../stores/folderStore';
+import type { FolderStructure } from '../types/folder';
 
 // Store untuk akses ke data folder
 const folderStore = useFolderStore();
@@ -29,8 +31,7 @@ const handleFolderSelect = (folderId: number | null) => {
 // Fungsi untuk memperbarui jalur folder aktif
 const updateActiveFolderPath = (folderId: number) => {
   // Cari jalur dari root ke folder yang dipilih
-  const path = [];
-  const findPath = (folders, targetId, currentPath = []) => {
+  const findPath = (folders: FolderStructure[], targetId: number, currentPath: number[] = []): number[] | null => {
     for (const folder of folders) {
       const newPath = [...currentPath, folder.id];
       
@@ -70,8 +71,12 @@ const breadcrumbPath = computed(() => {
     return [];
   }
 
-  const path = [];
-  const findPath = (folders, targetId, currentPath = []) => {
+  interface BreadcrumbItem {
+    id: number;
+    name: string;
+  }
+  
+  const findPath = (folders: FolderStructure[], targetId: number, currentPath: BreadcrumbItem[] = []): BreadcrumbItem[] | null => {
     for (const folder of folders) {
       // Cek folder saat ini
       const newPath = [...currentPath, { id: folder.id, name: folder.name }];
@@ -96,7 +101,7 @@ const breadcrumbPath = computed(() => {
 });
 
 // Handler untuk navigasi breadcrumb
-const navigateToBreadcrumb = (folderId) => {
+const navigateToBreadcrumb = (folderId: number) => {
   handleFolderSelect(folderId);
 };
 
@@ -110,8 +115,11 @@ watch(() => folderStore.folderStructure, () => {
 
 <template>
   <div class="explorer-container">
-    <!-- Breadcrumb navigation -->
-    <div class="breadcrumb" v-if="selectedFolder !== null">
+    <!-- Search bar -->
+    <SearchBar />
+    
+    <!-- Breadcrumb navigation atau status pencarian -->
+    <div class="breadcrumb" v-if="!folderStore.isSearching && selectedFolder !== null">
       <span class="breadcrumb-home" @click="handleFolderSelect(null)">Home</span>
       <span class="breadcrumb-separator" v-if="breadcrumbPath.length > 0"> &gt; </span>
       <template v-for="(item, index) in breadcrumbPath" :key="item.id">
@@ -123,6 +131,14 @@ watch(() => folderStore.folderStructure, () => {
         </span>
         <span class="breadcrumb-separator" v-if="index < breadcrumbPath.length - 1"> &gt; </span>
       </template>
+    </div>
+    
+    <div class="breadcrumb search-breadcrumb" v-if="folderStore.isSearching">
+      <span class="breadcrumb-home" @click="folderStore.resetSearch()">Home</span>
+      <span class="breadcrumb-separator"> &gt; </span>
+      <span class="breadcrumb-item search-results-title">
+        Hasil pencarian: "{{ folderStore.searchQuery }}"
+      </span>
     </div>
     
     <div class="explorer-panels">
@@ -138,9 +154,9 @@ watch(() => folderStore.folderStructure, () => {
         />
       </div>
       
-      <!-- Panel kanan - Subfolder langsung dari folder yang dipilih -->
+      <!-- Panel kanan - Subfolder langsung dari folder yang dipilih atau hasil pencarian -->
       <div class="folder-content-panel">
-        <div v-if="!selectedFolder && !folderStore.loading" class="no-selection"></div>
+        <div v-if="!selectedFolder && !folderStore.isSearching && !folderStore.loading" class="no-selection"></div>
         <FolderContent 
           v-else 
           :folderId="selectedFolder" 
@@ -170,6 +186,10 @@ watch(() => folderStore.folderStructure, () => {
   flex-wrap: wrap;
 }
 
+.search-breadcrumb {
+  background-color: #e0e8f0;
+}
+
 .breadcrumb-home, .breadcrumb-item {
   cursor: pointer;
   color: #0078D7;
@@ -182,6 +202,10 @@ watch(() => folderStore.folderStructure, () => {
 .breadcrumb-separator {
   margin: 0 8px;
   color: #666;
+}
+
+.search-results-title {
+  font-weight: 500;
 }
 
 .explorer-panels {

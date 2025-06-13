@@ -17,4 +17,10 @@ export interface FileItem {
 export interface FolderStructure extends Folder {
   subfolders: FolderStructure[];
   files?: FileItem[];
+}
+
+// Tipe untuk hasil pencarian
+export interface SearchResult {
+  folders: Folder[];
+  files: FileItem[];
 } 

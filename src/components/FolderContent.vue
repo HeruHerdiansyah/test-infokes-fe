@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useFolderStore } from '../stores/folderStore';
 import type { Folder, FileItem } from '../types/folder';
 
@@ -18,14 +18,14 @@ const folderStore = useFolderStore();
 
 // Memuat subfolder ketika folderId berubah
 watch(() => props.folderId, (newFolderId) => {
-  if (newFolderId !== undefined) {
+  if (newFolderId !== undefined && !folderStore.isSearching) {
     folderStore.fetchSubfolders(newFolderId);
   }
 }, { immediate: true });
 
 // Ketika komponen di-mount dan folderId telah diatur
 onMounted(() => {
-  if (props.folderId !== undefined) {
+  if (props.folderId !== undefined && !folderStore.isSearching) {
     folderStore.fetchSubfolders(props.folderId);
   }
 });
@@ -36,6 +36,14 @@ const handleFolderClick = (folderId: number) => {
   // Emit event untuk memperbarui jalur aktif di parent component
   emit('update-active-folder', folderId);
 };
+
+// Computed untuk menampilkan teks yang sesuai dalam status pencarian kosong
+const emptyStateText = computed(() => {
+  if (folderStore.isSearching) {
+    return 'Tidak ada hasil yang ditemukan';
+  }
+  return 'Folder kosong';
+});
 </script>
 
 <template>
@@ -49,12 +57,50 @@ const handleFolderClick = (folderId: number) => {
     <!-- Empty state -->
     <div v-else-if="folderStore.currentFolderContent.length === 0" class="empty-state">
       <div class="empty-container">
-        <div class="empty-icon">📂</div>
-        <div class="empty-subtext">Folder kosong</div>
+        <div class="empty-icon">{{ folderStore.isSearching ? '🔍' : '📂' }}</div>
+        <div class="empty-subtext">{{ emptyStateText }}</div>
       </div>
     </div>
     
-    <!-- Folder & File grid -->
+    <!-- Hasil Pencarian -->
+    <div v-else-if="folderStore.isSearching" class="search-results">
+      <!-- Folder results -->
+      <div v-if="folderStore.searchResults?.folders.length" class="search-section">
+        <div class="search-section-header">
+          <span class="search-section-title">Folder</span>
+        </div>
+        <div class="search-items-grid">
+          <div
+            v-for="folder in folderStore.searchResults?.folders"
+            :key="folder.id"
+            class="folder-card"
+            @click="handleFolderClick(folder.id)"
+          >
+            <div class="folder-icon">📁</div>
+            <div class="folder-name">{{ folder.name }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File results -->
+      <div v-if="folderStore.searchResults?.files.length" class="search-section">
+        <div class="search-section-header">
+          <span class="search-section-title">File</span>
+        </div>
+        <div class="search-items-grid">
+          <div
+            v-for="file in folderStore.searchResults?.files"
+            :key="file.id"
+            class="file-card"
+          >
+            <div class="file-icon">📄</div>
+            <div class="file-name">{{ file.name }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Folder & File grid (Normal browsing mode) -->
     <div v-else class="subfolder-grid">
       <template v-for="item in folderStore.currentFolderContent" :key="item.id">
         <div
@@ -129,6 +175,40 @@ const handleFolderClick = (folderId: number) => {
 .empty-subtext {
   font-size: 14px;
   color: #999;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.search-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-section-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.search-section-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.search-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 10px;
+  width: 100%;
+  align-content: flex-start;
 }
 
 .subfolder-grid {
