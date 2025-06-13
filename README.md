@@ -52,6 +52,10 @@ frontend/
     │   ├── FolderItem.vue      # Komponen item folder individual
     │   ├── SearchBar.vue       # Komponen untuk fitur pencarian
     │   └── HelloWorld.vue      # Komponen contoh
+    ├── services/      # Service layer untuk logika bisnis
+    │   ├── api/       # API clients untuk komunikasi dengan backend
+    │   ├── interfaces/ # Interfaces untuk services dan API clients
+    │   └── folderService.ts # Service untuk folder management
     ├── stores/        # Pinia stores untuk manajemen state
     │   └── folderStore.ts  # Store untuk data folder
     ├── types/         # Type definitions TypeScript

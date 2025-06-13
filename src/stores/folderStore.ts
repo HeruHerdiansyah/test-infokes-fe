@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import folderService from '../services/folderService';
 import type { Folder, FolderStructure, FileItem, SearchResult } from '../types/folder';
 
 // URL API backend dari .env
@@ -29,20 +29,7 @@ export const useFolderStore = defineStore('folder', {
       this.error = null;
       
       try {
-        const response = await axios.get(`${API_URL}/folders/structure`);
-        if (response.data.success) {
-          // Urutkan folderStructure secara rekursif berdasarkan nama
-          const sortStructure = (folders: FolderStructure[]): FolderStructure[] => {
-            return sortByName(folders).map(folder => ({
-              ...folder,
-              subfolders: sortStructure(folder.subfolders || []),
-              files: folder.files ? sortByName(folder.files) : []
-            }));
-          };
-          this.folderStructure = sortStructure(response.data.data);
-        } else {
-          this.error = 'Gagal mendapatkan struktur folder';
-        }
+        this.folderStructure = await folderService.getFolderStructure();
       } catch (error) {
         console.error('Error fetching folder structure:', error);
         this.error = 'Terjadi kesalahan saat mengambil struktur folder';
@@ -60,29 +47,9 @@ export const useFolderStore = defineStore('folder', {
       this.searchResults = null; // Reset hasil pencarian
       
       try {
-        let folders: Folder[] = [];
-        let files: FileItem[] = [];
-        if (folderId !== null) {
-          // Ambil subfolder dan file sekaligus dari endpoint baru
-          const res = await axios.get(`${API_URL}/folders/${folderId}/all`);
-          if (res.data.success) {
-            folders = sortByName(res.data.data.subfolders || []);
-            files = sortByName(res.data.data.files || []);
-          } else {
-            this.error = 'Gagal mendapatkan data folder';
-          }
-        } else {
-          // Root: ambil subfolder root saja
-          const url = `${API_URL}/folders/0/subfolder`;
-          const response = await axios.get(url);
-          if (response.data.success) {
-            folders = sortByName(response.data.data);
-          } else {
-            this.error = 'Gagal mendapatkan subfolder';
-          }
-        }
+        const content = await folderService.getFolderContentById(folderId);
         // Gabungkan: folder dulu, lalu file
-        this.currentFolderContent = [...folders, ...files];
+        this.currentFolderContent = [...content.folders, ...content.files];
       } catch (error) {
         console.error('Error fetching subfolders/files:', error);
         this.error = 'Terjadi kesalahan saat mengambil subfolder/file';
@@ -111,17 +78,12 @@ export const useFolderStore = defineStore('folder', {
       this.isSearching = true;
       
       try {
-        const response = await axios.get(`${API_URL}/folders/search?q=${encodeURIComponent(query)}`);
-        if (response.data.success) {
-          const { folders, files } = response.data.data;
-          this.searchResults = {
-            folders: sortByName(folders || []),
-            files: sortByName(files || [])
-          };
+        this.searchResults = await folderService.searchFolderAndFiles(query);
+        if (this.searchResults) {
           this.currentFolderContent = [...this.searchResults.folders, ...this.searchResults.files];
         } else {
-          this.error = 'Gagal melakukan pencarian';
           this.searchResults = null;
+          this.currentFolderContent = [];
         }
       } catch (error) {
         console.error('Error saat melakukan pencarian:', error);
