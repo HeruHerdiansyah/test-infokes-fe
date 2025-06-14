@@ -8,7 +8,7 @@ function sortByName<T extends { name: string }>(arr: T[]): T[] {
   return arr.slice().sort((a, b) => a.name.localeCompare(b.name));
 }
 
-class FolderService implements IFolderService {
+export class FolderService implements IFolderService {
   private folderApi: IFolderApi;
 
   constructor(folderApi: IFolderApi) {

@@ -10,6 +10,7 @@ Frontend untuk assessment di Infokes.
 - **State Management**: Pinia
 - **Routing**: Vue Router
 - **HTTP Client**: Axios
+- **Testing**: Vitest dengan Testing Library
 - **Development Server & Bundler**: Vite
 
 ## Konfigurasi env
@@ -36,6 +37,19 @@ bun run dev
 
 Server akan berjalan di http://localhost:${VITE_PORT} (default: 5173)
 
+## Menjalankan Test
+
+```bash
+# Menjalankan semua test
+bun test
+
+# Menjalankan unit test saja
+bun test:unit
+
+# Menjalankan integration test saja
+bun test:integration
+```
+
 ## Struktur Proyek
 
 ```
@@ -58,6 +72,13 @@ frontend/
     │   └── folderService.ts # Service untuk folder management
     ├── stores/        # Pinia stores untuk manajemen state
     │   └── folderStore.ts  # Store untuk data folder
+    ├── test/          # Test files
+    │   ├── setup.ts   # Konfigurasi global untuk test
+    │   ├── unit/      # Unit test
+    │   │   ├── components/ # Test untuk komponen UI
+    │   │   ├── services/   # Test untuk services
+    │   │   └── stores/     # Test untuk Pinia stores
+    │   └── integration/    # Integration test
     ├── types/         # Type definitions TypeScript
     ├── views/         # Komponen untuk halaman/tampilan
     │   └── ExplorerView.vue # Tampilan utama Windows Explorer
